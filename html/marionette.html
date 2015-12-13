@@ -25,6 +25,19 @@
     <script>
         var UserAdmin = new Marionette.Application();
 
+        //AppRouter is probably going to be deprecated in version 3 of Marionette
+//        var AppRouter = Marionette.AppRouter.extend();
+        //Using Backbone's router instead
+        var AppRouter = Backbone.Router.extend({
+            routes: {
+                //"" is the index route
+                "" : "showIndex" //showIndex method will be called
+            },
+            showIndex: function() {
+                UserAdmin.AppController.showIndex();
+            }
+        });
+
         var AppController = Marionette.Controller.extend({
             showIndex : function() {
                 var IndexView = Marionette.ItemView.extend({
@@ -41,13 +54,14 @@
                 mainRegion: "#app"
             });
             UserAdmin.AppController = new AppController();
+            UserAdmin.Router = new AppRouter();
 
-            UserAdmin.AppController.showIndex();
+            //When using router, you have to do this
+            Backbone.history.start();
         });
 
         //runs initialize and sets up other stuff
         UserAdmin.start();
-
 
     </script>
 </body>
