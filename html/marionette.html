@@ -13,6 +13,7 @@
     <div id="app">
 
     </div>
+    <!--This script will execute when IndexView is invoked-->
     <script id="index-template" type="text/x-backbone">
         <h2>Welcome to Marionette's User Admin</h2>
         <p>A demo application written with Marionette.JS</p>
@@ -24,15 +25,30 @@
     <script>
         var UserAdmin = new Marionette.Application();
 
-        UserAdmin.addRegions({
-            mainRegion: "#app"
+        var AppController = Marionette.Controller.extend({
+            showIndex : function() {
+                var IndexView = Marionette.ItemView.extend({
+                    template: "#index-template"
+                });
+                /*Adding the index-template view to the mainRegion, which is the "app"-div*/
+                UserAdmin.mainRegion.show(new IndexView());
+            }
         });
 
-        var IndexView = Marionette.ItemView.extend({
-            template: "#index-template"
+        //What will happen when the app starts
+        UserAdmin.addInitializer(function() {
+            UserAdmin.addRegions({
+                mainRegion: "#app"
+            });
+            UserAdmin.AppController = new AppController();
+
+            UserAdmin.AppController.showIndex();
         });
 
-        UserAdmin.mainRegion.show(new IndexView());
+        //runs initialize and sets up other stuff
+        UserAdmin.start();
+
+
     </script>
 </body>
 </html>
