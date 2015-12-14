@@ -18,11 +18,18 @@
         <h2>Welcome to Marionette's User Admin</h2>
         <p>A demo application written with Marionette.JS</p>
         <ul>
-            <li><a href=#>Users</a></li>
+            <li><a href=# id="nav-users-index">Users</a></li>
             <li><a href=#>Roles</a></li>
         </ul>
     </script>
     <script>
+        var testData = [
+        { id: 1, email: "test1@test.com" },
+        { id: 2, email: "test2@test.com" },
+        { id: 3, email: "test3@test.com" },
+        { id: 4, email: "test4@test.com" }
+        ];
+
         var UserAdmin = new Marionette.Application();
 
         //AppRouter is probably going to be deprecated in version 3 of Marionette
@@ -31,20 +38,27 @@
         var AppRouter = Backbone.Router.extend({
             routes: {
                 //"" is the index route
-                "" : "showIndex" //showIndex method will be called
+                "" : "showIndex", //showIndex method will be called
+                "users": "showUserList"
             },
             showIndex: function() {
                 UserAdmin.AppController.showIndex();
+            },
+            showUserList: function() {
+                UserAdmin.AppController.showUserList();
             }
         });
 
         var AppController = Marionette.Controller.extend({
             showIndex : function() {
-                var IndexView = Marionette.ItemView.extend({
-                    template: "#index-template"
-                });
                 /*Adding the index-template view to the mainRegion, which is the "app"-div*/
                 UserAdmin.mainRegion.show(new IndexView());
+            },
+            showUserList: function() {
+                var userListView = new UserListView({collection: new Backbone.Collection(testData)});
+                UserAdmin.mainRegion.show(userListView);
+                //update the browser url
+                UserAdmin.Router.navigate("users");
             }
         });
 
@@ -58,6 +72,31 @@
 
             //When using router, you have to do this
             Backbone.history.start();
+        });
+
+        var IndexView = Marionette.ItemView.extend({
+            template: "#index-template",
+            events: {
+                "click #nav-users-index" : "showUserList"
+            },
+            showUserList: function(e) {
+                e.preventDefault();
+                UserAdmin.AppController.showUserList();
+            }
+        });
+
+        var UserItemView = Marionette.ItemView.extend({
+            tagName: "tr",
+            template: _.template("<td><%=email%></td>")
+        });
+
+        var UserListView = Marionette.CollectionView.extend({
+            tagName: "table",
+            className: "table table-striped",
+            childView: UserItemView, //individual row displays
+            onBeforeRender: function() {
+                this.$el.append("<h2>User List</h2>")
+            }
         });
 
         //runs initialize and sets up other stuff
