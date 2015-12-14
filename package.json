@@ -4,7 +4,9 @@
   "main": "index.js",
   "dependencies": {
     "backbone": "^1.2.3",
-    "backbone.marionette": "^2.4.4"
+    "backbone.marionette": "^2.4.4",
+    "bootstrap": "^3.3.6",
+    "jquery": "^2.1.4"
   },
   "devDependencies": {},
   "scripts": {

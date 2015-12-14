@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link href="../node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet" type="text/css"/>
 </head>
 
 <body>
-    <script src="../node_modules/backbone.marionette/node_modules/backbone.wreqr/public/javascripts/jquery.js" type="text/javascript"></script>
+    <script src="../node_modules/jquery/dist/jquery.js" type="text/javascript"></script>
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.js" type="text/javascript"></script>
     <script src="../node_modules/backbone/node_modules/underscore/underscore.js" type="text/javascript"></script>
     <script src="../node_modules/backbone/backbone.js" type="text/javascript"></script>
     <script src="../node_modules/backbone.marionette/lib/backbone.marionette.js" type="text/javascript"></script>
@@ -22,6 +24,26 @@
             <li><a href=#>Roles</a></li>
         </ul>
     </script>
+
+    <script id="user-layout-template" type="text/x-backbone">
+        <div class="row">
+            <h2>Viewing <%=email%></h2>
+        </div>
+        <hr>
+        <div class="row">
+            <div id="summary" class="col-md-3 col-sm-3 well"></div>
+            <div id="detail" class="col-md-8 col-sm-8"></div>
+        </div>
+    </script>
+    <script id="summary-template" type="text/x-backbone">
+        <ul>
+            <li>Thing 1</li>
+            <li>Thing 2</li>
+        </ul>
+    </script>
+    <script id="detail-template" type="text/x-backbone">
+        <h2>The Details</h2>
+    </script>
     <script>
         var testData = [
         { id: 1, email: "test1@test.com" },
@@ -32,20 +54,28 @@
 
         var UserAdmin = new Marionette.Application();
 
+        var UsersCollection = Backbone.Collection.extend({
+            url: "/api/users"
+        });
+
         //AppRouter is probably going to be deprecated in version 3 of Marionette
-//        var AppRouter = Marionette.AppRouter.extend();
+        //var AppRouter = Marionette.AppRouter.extend();
         //Using Backbone's router instead
         var AppRouter = Backbone.Router.extend({
             routes: {
                 //"" is the index route
                 "" : "showIndex", //showIndex method will be called
-                "users": "showUserList"
+                "users": "showUserList",
+                "users/:id": "showUserDetail"
             },
             showIndex: function() {
                 UserAdmin.AppController.showIndex();
             },
             showUserList: function() {
                 UserAdmin.AppController.showUserList();
+            },
+            showUserDetail: function(id) {
+                UserAdmin.AppController.showUserDetail(id);
             }
         });
 
@@ -55,10 +85,20 @@
                 UserAdmin.mainRegion.show(new IndexView());
             },
             showUserList: function() {
-                var userListView = new UserListView({collection: new Backbone.Collection(testData)});
+                var userListView = new UserListView({collection: UserAdmin.Users});
                 UserAdmin.mainRegion.show(userListView);
                 //update the browser url
                 UserAdmin.Router.navigate("users");
+            },
+            showUserDetail: function(id) {
+                var user = UserAdmin.Users.get(id);
+
+                var layout = new UserLayoutView({model: user});
+                UserAdmin.mainRegion.show(layout);
+
+                layout.summary.show(new UserSummaryView({model: user}));
+                layout.detail.show(new UserDetailView({model: user}));
+                UserAdmin.Router.navigate("users/" + id);
             }
         });
 
@@ -69,6 +109,7 @@
             });
             UserAdmin.AppController = new AppController();
             UserAdmin.Router = new AppRouter();
+            UserAdmin.Users = new UsersCollection(testData);
 
             //When using router, you have to do this
             Backbone.history.start();
@@ -85,9 +126,32 @@
             }
         });
 
+        var UserLayoutView = Marionette.LayoutView.extend({
+            template: "#user-layout-template",
+            regions: {
+                summary : "#summary",
+                detail: "#detail"
+            }
+        });
+
+        var UserSummaryView = Marionette.ItemView.extend({
+            template: "#summary-template"
+        });
+
+        var UserDetailView = Marionette.ItemView.extend({
+            template: "#detail-template"
+        });
+
         var UserItemView = Marionette.ItemView.extend({
             tagName: "tr",
-            template: _.template("<td><%=email%></td>")
+            template: _.template("<td><a href=#><%=email%></a></td>"),
+            events: {
+                "click a" : "showUserDetail"
+            },
+            showUserDetail: function(e) {
+                e.preventDefault();
+                UserAdmin.AppController.showUserDetail(this.model.id);
+            }
         });
 
         var UserListView = Marionette.CollectionView.extend({
