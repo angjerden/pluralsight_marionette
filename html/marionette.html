@@ -52,12 +52,8 @@
         { id: 4, email: "test4@test.com" }
         ];
 
+        //App Objects
         var UserAdmin = new Marionette.Application();
-
-        var UsersCollection = Backbone.Collection.extend({
-            url: "/api/users"
-        });
-
         //AppRouter is probably going to be deprecated in version 3 of Marionette
         //var AppRouter = Marionette.AppRouter.extend();
         //Using Backbone's router instead
@@ -75,10 +71,10 @@
                 UserAdmin.AppController.showUserList();
             },
             showUserDetail: function(id) {
-                UserAdmin.AppController.showUserDetail(id);
+                var user = UserAdmin.Users.get(id);
+                user.select();
             }
         });
-
         var AppController = Marionette.Controller.extend({
             showIndex : function() {
                 /*Adding the index-template view to the mainRegion, which is the "app"-div*/
@@ -90,31 +86,59 @@
                 //update the browser url
                 UserAdmin.Router.navigate("users");
             },
-            showUserDetail: function(id) {
-                var user = UserAdmin.Users.get(id);
-
+            showUserDetail: function(user) {
                 var layout = new UserLayoutView({model: user});
                 UserAdmin.mainRegion.show(layout);
 
                 layout.summary.show(new UserSummaryView({model: user}));
                 layout.detail.show(new UserDetailView({model: user}));
-                UserAdmin.Router.navigate("users/" + id);
+                UserAdmin.Router.navigate("users/" + user.id);
             }
         });
 
-        //What will happen when the app starts
+        //Initializer - Runs when the app starts
         UserAdmin.addInitializer(function() {
             UserAdmin.addRegions({
                 mainRegion: "#app"
             });
+
+            //inits
             UserAdmin.AppController = new AppController();
             UserAdmin.Router = new AppRouter();
             UserAdmin.Users = new UsersCollection(testData);
+
+            //Events
+            UserAdmin.on("user:selected", function(user) {
+               UserAdmin.AppController.showUserDetail(user);
+            });
 
             //When using router, you have to do this
             Backbone.history.start();
         });
 
+        //Data
+        var User = Backbone.Model.extend({
+            url: "/api/users",
+            validate: function(attributes, options) {
+                if (!(attributes.email && attributes.userName)) {
+                    return "Need an email AND a userName";
+                }
+            },
+            initialize: function () {
+                this.on("invalid", function(m) {
+                    console.log(m.validationError);
+                })
+            },
+            select: function() { 
+                UserAdmin.trigger("user:selected", this);
+            }
+        });
+        var UsersCollection = Backbone.Collection.extend({
+            url: "api/users",
+            model: User
+        });
+
+        //Views
         var IndexView = Marionette.ItemView.extend({
             template: "#index-template",
             events: {
@@ -150,7 +174,7 @@
             },
             showUserDetail: function(e) {
                 e.preventDefault();
-                UserAdmin.AppController.showUserDetail(this.model.id);
+                this.model.select();
             }
         });
 
